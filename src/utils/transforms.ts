@@ -1,4 +1,4 @@
-import { ColumnType, DataRow, Dataset, MissingComparison, PipelineLogEntry, ScalingSummary } from '../types';
+import { ColumnType, DataRow, Dataset, FeatureEngineeringConfig, MissingComparison, PipelineLogEntry, ScalingSummary } from '../types';
 import { calculateNumericStats } from './stats';
 
 /**
@@ -547,3 +547,107 @@ This preprocessing audit log details all data wrangling, cleaning, statistical i
 
   return md;
 }
+
+/**
+ * Appends a new data row to the dataset.
+ */
+export function addCustomRow(
+  dataset: Dataset,
+  newRow: DataRow
+): Dataset {
+  return {
+    ...dataset,
+    rows: [...dataset.rows, newRow]
+  };
+}
+
+/**
+ * Creates and appends an engineered feature column (interaction, ratio, polynomial, or binning).
+ */
+export function addEngineeredFeature(
+  dataset: Dataset,
+  config: FeatureEngineeringConfig
+): {
+  updatedDataset: Dataset;
+  featureName: string;
+  inferredType: ColumnType;
+  description: string;
+} {
+  const colA = config.colA;
+  const colB = config.colB;
+  const op = config.operation;
+  const colName = config.newColumnName.trim() || `feat_${Date.now()}`;
+  let inferredType: ColumnType = 'numeric';
+  let description = '';
+
+  const newRows = dataset.rows.map(row => {
+    const valA = row[colA];
+    const numA = typeof valA === 'number' ? valA : Number(valA);
+
+    let resultVal: string | number | null = null;
+
+    if (op === 'interaction' && colB) {
+      const valB = row[colB];
+      const numB = typeof valB === 'number' ? valB : Number(valB);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        if (config.mathOp === 'add') resultVal = numA + numB;
+        else if (config.mathOp === 'subtract') resultVal = numA - numB;
+        else if (config.mathOp === 'divide') resultVal = numB !== 0 ? Number((numA / numB).toFixed(4)) : null;
+        else resultVal = Number((numA * numB).toFixed(4));
+      }
+      inferredType = 'numeric';
+      description = `Computed ${config.mathOp || 'multiply'} between ${colA} and ${colB}`;
+    } else if (op === 'ratio' && colB) {
+      const valB = row[colB];
+      const numB = typeof valB === 'number' ? valB : Number(valB);
+      if (!isNaN(numA) && !isNaN(numB) && numB !== 0) {
+        resultVal = Number((numA / numB).toFixed(4));
+      }
+      inferredType = 'numeric';
+      description = `Ratio of ${colA} / ${colB}`;
+    } else if (op === 'polynomial') {
+      const degree = config.degree || 2;
+      if (!isNaN(numA)) {
+        resultVal = Number(Math.pow(numA, degree).toFixed(4));
+      }
+      inferredType = 'numeric';
+      description = `Polynomial degree ${degree} of ${colA}`;
+    } else if (op === 'binning') {
+      inferredType = 'categorical';
+      const thresholds = config.binThresholds || [30, 45];
+      const labels = config.binLabels || ['Low', 'Medium', 'High'];
+      if (!isNaN(numA)) {
+        let assigned = labels[labels.length - 1];
+        for (let i = 0; i < thresholds.length; i++) {
+          if (numA < thresholds[i]) {
+            assigned = labels[i] || `Bin_${i}`;
+            break;
+          }
+        }
+        resultVal = assigned;
+      }
+      description = `Binned ${colA} into categories [${labels.join(', ')}]`;
+    }
+
+    return {
+      ...row,
+      [colName]: resultVal
+    };
+  });
+
+  return {
+    updatedDataset: {
+      ...dataset,
+      columns: [...dataset.columns, colName],
+      rows: newRows,
+      columnTypes: {
+        ...dataset.columnTypes,
+        [colName]: inferredType
+      }
+    },
+    featureName: colName,
+    inferredType,
+    description
+  };
+}
+

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, FileText, RotateCcw, Database } from 'lucide-react';
+import { Download, FileText, RotateCcw, Database, Plus, Sparkles } from 'lucide-react';
 import { Dataset, PipelineStepId } from '../types';
 
 interface TopBarProps {
@@ -8,6 +8,8 @@ interface TopBarProps {
   onNavigate: (step: PipelineStepId) => void;
   onExportCSV: () => void;
   onExportMarkdown: () => void;
+  onOpenAddRow: () => void;
+  onOpenAddFeature: () => void;
   logsCount: number;
 }
 
@@ -17,6 +19,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onNavigate,
   onExportCSV,
   onExportMarkdown,
+  onOpenAddRow,
+  onOpenAddFeature,
   logsCount
 }) => {
   return (
@@ -50,10 +54,28 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       )}
 
-      {/* Zone 3: 1-2 primary actions */}
+      {/* Zone 3: Actions */}
       <div className="flex items-center gap-2">
         {dataset && (
           <>
+            <button
+              onClick={onOpenAddRow}
+              title="Add a new row to the dataset"
+              className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:text-neutral-900 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-neutral-600" />
+              <span>Add Record</span>
+            </button>
+
+            <button
+              onClick={onOpenAddFeature}
+              title="Engineer and add a new calculated column"
+              className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:text-neutral-900 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-neutral-600" />
+              <span>Engineer Feature</span>
+            </button>
+
             <button
               onClick={onReset}
               title="Reset to initial dataset state"
@@ -62,20 +84,22 @@ export const TopBar: React.FC<TopBarProps> = ({
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
             </button>
+
             <button
               onClick={onExportMarkdown}
               title="Download execution audit log as Markdown"
-              className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:text-neutral-900 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:text-neutral-900 transition-colors flex items-center gap-1.5 cursor-pointer hidden sm:flex"
             >
               <FileText className="w-3.5 h-3.5 text-neutral-500" />
-              <span>Export Log (.md)</span>
+              <span>Log (.md)</span>
             </button>
+
             <button
               onClick={onExportCSV}
               className="px-3.5 py-1.5 text-xs font-medium text-white bg-neutral-900 rounded-md hover:bg-neutral-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download CSV</span>
+              <span>Export CSV</span>
             </button>
           </>
         )}
@@ -83,3 +107,4 @@ export const TopBar: React.FC<TopBarProps> = ({
     </header>
   );
 };
+

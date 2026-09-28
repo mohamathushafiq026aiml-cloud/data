@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ColumnType, Dataset, PipelineLogEntry, PipelineStepId } from './types';
 import { getSampleDataset } from './data/sampleAttrition';
 import { exportToCSV } from './utils/csv';
-import { generateMarkdownLog } from './utils/transforms';
+import { generateMarkdownLog, addCustomRow, addEngineeredFeature } from './utils/transforms';
+import { FeatureEngineeringConfig } from './types';
 import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
+import { AddRowModal } from './components/AddRowModal';
+import { AddFeatureModal } from './components/AddFeatureModal';
 import { LoadStep } from './components/steps/LoadStep';
 import { OverviewStep } from './components/steps/OverviewStep';
 import { EdaStep } from './components/steps/EdaStep';
@@ -22,6 +25,8 @@ export default function App() {
   const [initialSnapshot, setInitialSnapshot] = useState<Dataset>(initialSample);
   const [currentStep, setCurrentStep] = useState<PipelineStepId>('overview');
   const [completedSteps, setCompletedSteps] = useState<Set<PipelineStepId>>(new Set(['load', 'overview']));
+  const [isAddRowOpen, setIsAddRowOpen] = useState(false);
+  const [isAddFeatureOpen, setIsAddFeatureOpen] = useState(false);
   const [logs, setLogs] = useState<PipelineLogEntry[]>([
     {
       id: 'init-1',
@@ -136,6 +141,53 @@ export default function App() {
     setCompletedSteps(prev => new Set([...prev, currentStep]));
   };
 
+  // Handle adding a manual record
+  const handleAddRow = (newRow: any) => {
+    const updated = addCustomRow(dataset, newRow);
+    setDataset(updated);
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const newLog: PipelineLogEntry = {
+      id: `addrow-${Date.now()}`,
+      step: 'overview',
+      stepTitle: 'Manual Record Addition',
+      timestamp: timeStr,
+      actionSummary: `Added 1 new sample record to dataset "${dataset.name}" (Row #${updated.rows.length})`,
+      details: [
+        `Record values: ${Object.entries(newRow).map(([k, v]) => `${k}=${v}`).join(', ')}`,
+        `New row count: ${updated.rows.length}`
+      ],
+      mlRationale: 'Ingesting specific benchmark test cases or hypothetical profiles tests model generalization boundary conditions and inference pipelines.',
+      changesCount: 1
+    };
+
+    setLogs(prev => [...prev, newLog]);
+  };
+
+  // Handle adding an engineered feature
+  const handleAddFeature = (config: FeatureEngineeringConfig) => {
+    const { updatedDataset, featureName, inferredType, description } = addEngineeredFeature(dataset, config);
+    setDataset(updatedDataset);
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const newLog: PipelineLogEntry = {
+      id: `addfeat-${Date.now()}`,
+      step: 'clean',
+      stepTitle: 'Feature Engineering (Added Column)',
+      timestamp: timeStr,
+      actionSummary: `Engineered synthetic feature "${featureName}" (${inferredType})`,
+      details: [
+        `Operation: ${config.operation}`,
+        `Calculation: ${description}`,
+        `Added to dataset schema; total features now ${updatedDataset.columns.length}`
+      ],
+      mlRationale: 'Synthesizing non-linear feature interactions, normalized ratios, or domain-specific binning allows linear and tree models to capture complex multi-variable relationships without deep architecture complexity.',
+      changesCount: updatedDataset.rows.length
+    };
+
+    setLogs(prev => [...prev, newLog]);
+  };
+
   // Download cleaned CSV
   const handleDownloadCSV = () => {
     const csvContent = exportToCSV(dataset.columns, dataset.rows);
@@ -176,7 +228,25 @@ export default function App() {
         onNavigate={setCurrentStep}
         onExportCSV={handleDownloadCSV}
         onExportMarkdown={handleDownloadMarkdown}
+        onOpenAddRow={() => setIsAddRowOpen(true)}
+        onOpenAddFeature={() => setIsAddFeatureOpen(true)}
         logsCount={logs.length}
+      />
+
+      {/* Add Row Modal */}
+      <AddRowModal
+        dataset={dataset}
+        isOpen={isAddRowOpen}
+        onClose={() => setIsAddRowOpen(false)}
+        onAddRow={handleAddRow}
+      />
+
+      {/* Add / Engineer Feature Modal */}
+      <AddFeatureModal
+        dataset={dataset}
+        isOpen={isAddFeatureOpen}
+        onClose={() => setIsAddFeatureOpen(false)}
+        onAddFeature={handleAddFeature}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -203,6 +273,8 @@ export default function App() {
                 dataset={dataset}
                 onUpdateColumnType={handleUpdateColumnType}
                 onNavigate={setCurrentStep}
+                onOpenAddRow={() => setIsAddRowOpen(true)}
+                onOpenAddFeature={() => setIsAddFeatureOpen(true)}
               />
             )}
 

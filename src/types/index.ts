@@ -100,3 +100,17 @@ export interface MissingComparison {
   imputedMethod: 'median' | 'mode' | 'none';
   imputedValue: string | number | null;
 }
+
+export type FeatureEngOperation = 'interaction' | 'ratio' | 'polynomial' | 'binning';
+
+export interface FeatureEngineeringConfig {
+  newColumnName: string;
+  operation: FeatureEngOperation;
+  colA: string;
+  colB?: string;
+  mathOp?: 'multiply' | 'divide' | 'add' | 'subtract';
+  degree?: number;
+  binThresholds?: number[];
+  binLabels?: string[];
+}
+

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Hash, Type, HelpCircle, ArrowRight } from 'lucide-react';
+import { Layers, Hash, Type, HelpCircle, ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { ColumnType, Dataset, PipelineStepId } from '../../types';
 import { DataTable } from '../DataTable';
 
@@ -7,12 +7,16 @@ interface OverviewStepProps {
   dataset: Dataset;
   onUpdateColumnType: (column: string, newType: ColumnType) => void;
   onNavigate: (step: PipelineStepId) => void;
+  onOpenAddRow?: () => void;
+  onOpenAddFeature?: () => void;
 }
 
 export const OverviewStep: React.FC<OverviewStepProps> = ({
   dataset,
   onUpdateColumnType,
-  onNavigate
+  onNavigate,
+  onOpenAddRow,
+  onOpenAddFeature
 }) => {
   const numericCols = dataset.columns.filter(c => dataset.columnTypes[c] === 'numeric');
   const categoricalCols = dataset.columns.filter(c => dataset.columnTypes[c] === 'categorical');
@@ -40,13 +44,35 @@ export const OverviewStep: React.FC<OverviewStepProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => onNavigate('eda')}
-          className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 self-start cursor-pointer shadow-xs"
-        >
-          <span>Continue to EDA</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenAddRow && (
+            <button
+              onClick={onOpenAddRow}
+              className="px-3 py-1.5 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-neutral-600" />
+              <span>Add Record</span>
+            </button>
+          )}
+
+          {onOpenAddFeature && (
+            <button
+              onClick={onOpenAddFeature}
+              className="px-3 py-1.5 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-neutral-600" />
+              <span>Engineer Feature</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => onNavigate('eda')}
+            className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 self-start cursor-pointer shadow-xs"
+          >
+            <span>Continue to EDA</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Metric Cards */}
