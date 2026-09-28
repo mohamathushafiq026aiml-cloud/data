@@ -1,0 +1,6 @@
+{
+  "name": "Data Preprocessing Studio",
+  "description": "Interactive data preprocessing studio to clean, transform, encode, and prepare CSV datasets for Machine Learning.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
